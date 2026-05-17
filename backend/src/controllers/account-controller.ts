@@ -118,3 +118,4 @@ export const updatePhoto = async (req: Request, res: Response) => {
       handleError(err, res);
    }
 };
+
