@@ -300,3 +300,5 @@ Then('nenhuma alteração é feita nos dados do usuário', async () => {
   const checkResponse = await api.get(`/accounts/${currentUserId}`);
   assert.strictEqual(checkResponse.data.name, "Carlos");
 });
+
+
