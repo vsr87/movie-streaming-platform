@@ -301,4 +301,3 @@ Then('nenhuma alteração é feita nos dados do usuário', async () => {
   assert.strictEqual(checkResponse.data.name, "Carlos");
 });
 
-
