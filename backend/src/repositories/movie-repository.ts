@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import defaultPrisma from "../database/prisma";
+import { prisma as defaultPrisma } from "../database/prisma-client";
 import { MovieModel } from "../models/movie-model";
 
 export class MovieRepository {
