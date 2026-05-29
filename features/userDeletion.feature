@@ -3,13 +3,9 @@ Feature: Exclusão de Conta de Usuário
   Quero poder excluir minha conta permanentemente
   Para que meus dados pessoais sejam removidos do sistema quando eu não quiser mais o serviço
 
-  # O Background agora prepara os dados genéricos para GUI e API
   Background:
     Given existe uma conta ativa cadastrada com o e-mail "Luiz@teste.com" e ID "12345"
 
-  # ==========================================
-  # CENÁRIOS DE INTERFACE GRÁFICA (GUI)
-  # ==========================================
 
   @gui @frontend
   Scenario: Exclusão de conta bem-sucedida confirmada por texto
@@ -45,10 +41,6 @@ Feature: Exclusão de Conta de Usuário
     Then o sistema deve exibir a mensagem de erro "A frase de confirmação digitada está incorreta."
     And o modal de confirmação deve permanecer aberto
     And a conta do usuário deve continuar ativa no sistema
-
-  # ==========================================
-  # CENÁRIOS DE SERVIÇOS / BACKEND (API)
-  # ==========================================
 
   @api @backend
   Scenario: Exclusão de conta com sucesso via requisição de API
