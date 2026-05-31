@@ -10,8 +10,8 @@ const app = express();
 // Middleware para aceitar JSON no body das requisições
 app.use(express.json());
 
-// Registrando as rotas de usuários
-app.use(userRoutes);
+// Registrando as rotas de usuários 
+app.use("/api", userRoutes);
 
 // Registrando as rotas de filmes
 app.use("/", movieRoutes);
