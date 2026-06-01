@@ -1,3 +1,4 @@
+@foco
 Feature: Cadastro de Usuário
     Como um visitante da plataforma
     Eu desejo poder escolher como realizarei meu cadastro, via formulário padrão ou SSO do Google
@@ -48,7 +49,7 @@ Scenario: Cadastro mal sucedido via formulário devido a senha inválida por tam
 
 @validacao @api
 Scenario: Tentativa de cadastro com formato de e-mail inválido
-    When eu envio uma requisição POST para "/register" com os dados:
+    When eu envio uma requisição POST para "/api/register" com os dados:
         | name  | email               | password   |
         | Luiz  | luiz_sem_arroba.com | senha12345 |
     Then o status da resposta deve ser 400
@@ -57,7 +58,7 @@ Scenario: Tentativa de cadastro com formato de e-mail inválido
 
 @validacao @api
 Scenario: Tentativa de cadastro com campos em branco
-    When eu envio uma requisição POST para "/register" com os dados:
+    When eu envio uma requisição POST para "/api/register" com os dados:
         | name  | email             | password |
         |       | luiz@exemplo.com  |          |
     Then o status da resposta deve ser 400
@@ -65,13 +66,13 @@ Scenario: Tentativa de cadastro com campos em branco
 
 @seguranca @api
 Scenario: Tentativa de cadastro com senha excedendo o limite máximo 
-    When eu envio uma requisição POST para "/register" com uma "password" de 1000 caracteres
+    When eu envio uma requisição POST para "/api/register" com uma "password" de 1000 caracteres
     Then o status da resposta deve ser 400
     And a mensagem de erro deve indicar "tamanho de senha excede o limite permitido"
 
 @seguranca @api
 Scenario: Proteção contra Injeção de NoSQL/SQL nos campos
-    When eu envio uma requisição POST para "/register" com o campo email contendo:
+    When eu envio uma requisição POST para "/api/register" com o campo email contendo:
         """
         {"$gt": ""}
         """
@@ -81,14 +82,14 @@ Scenario: Proteção contra Injeção de NoSQL/SQL nos campos
 @sso @google @resiliencia
 Scenario: Falha de comunicação com a API do Google
     Given que a API do Google está indisponível ou demorando a responder
-    When eu envio uma requisição POST para "/auth/google" com um token válido
+    When eu envio uma requisição POST para "/api/auth/google" com um token válido
     Then o status da resposta deve ser 500 (ou 502/504)
     And a mensagem de erro deve ser "Erro ao autenticar com o Google"
     And a aplicação não deve "quebrar" 
 
 @sso @google @seguranca
 Scenario: Tentativa de login com token do Google expirado ou forjado
-    When eu envio uma requisição POST para "/auth/google" com um token manipulado
+    When eu envio uma requisição POST para "/api/auth/google" com um token manipulado
     Then o serviço "verifyIdToken" deve rejeitar a assinatura
     And o status da resposta deve ser 400
     And a mensagem de erro deve ser "Token do Google inválido"

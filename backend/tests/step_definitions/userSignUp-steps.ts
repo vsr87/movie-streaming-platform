@@ -80,18 +80,19 @@ When('eu preencho o campo {string} com {string}', async function (campo, valor) 
     userData[mapaCampos[campo] || campo] = valor;
 
     if (campo === "nome" && userData.password) {
-        response = await api.post('/register', userData);
+        response = await api.post('/api/register', userData);
     }
 });
 
 When('eu realizo o cadastro utilizando minha conta Google com email {string}', async function (email) {
     try {
-        response = await axios.post('http://localhost:3000/auth/google', {
+        response = await api.post('/api/auth/google', {
             token: "TEST_VALID_TOKEN",
             mockEmail: email,
             mockName: "João" 
         });
     } catch (error: any) {
+        console.log("ERRO AXIOS:", error.message);
         response = error.response;
     }
 });
@@ -163,6 +164,13 @@ Then('deve aparecer uma mensagem de aviso {string}', function (aviso) {
 
 Then('uma nova conta de usuário deve ser criada para {string}', async function (email) {
     const user = await prisma.user.findUnique({ where: { email } });
+    
+    // Adicione estas duas linhas para investigarmos o crime 🕵️‍♂️
+    if (!user) {
+        console.log("STATUS DA API:", response?.status);
+        console.log("RESPOSTA DA API:", response?.data);
+    }
+
     assert.ok(user, `Usuário com email ${email} não foi encontrado no banco.`);
 });
 
