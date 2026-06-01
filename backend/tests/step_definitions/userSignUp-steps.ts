@@ -165,7 +165,6 @@ Then('deve aparecer uma mensagem de aviso {string}', function (aviso) {
 Then('uma nova conta de usuário deve ser criada para {string}', async function (email) {
     const user = await prisma.user.findUnique({ where: { email } });
     
-    // Adicione estas duas linhas para investigarmos o crime 🕵️‍♂️
     if (!user) {
         console.log("STATUS DA API:", response?.status);
         console.log("RESPOSTA DA API:", response?.data);
