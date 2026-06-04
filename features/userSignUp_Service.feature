@@ -1,5 +1,4 @@
-# language: pt
-Funcionalidade: Registo de Novos Utilizadores
+Feature: Registo de Novos Utilizadores
     Como um visitante da plataforma
     Desejo poder escolher como realizarei o meu registo, via formulário padrão ou SSO do Google
     Para que eu tenha controlo sobre os dados associados à minha conta e flexibilidade no futuro login
