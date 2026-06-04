@@ -31,7 +31,6 @@ export class MovieService {
       cast: movie.cast || "N/A"
     };
   }
-
   async getRawMovieData(id: string) {
     // O service chama o repository, mantendo-se isolado do Prisma
     const movie = await this.repository.findById(id);
@@ -42,7 +41,6 @@ export class MovieService {
   }
 }
 
-// Por enquanto, todas as buscas estão ocorrendo pelo título do filme, mas irá mudar no futuro.
 
 export const createMovieService = async (
   movie: Omit<MovieModel, "id" | "createdAt" | "isDeleted">,
@@ -50,7 +48,7 @@ export const createMovieService = async (
   // Aqui é necessário verificar se há algum campo da requisição que não foi preenchido
   const { title, synopsis, genres, duration, url_movie, url_poster } = movie;
 
-  if (genres.length === 0) {
+  if (!genres || genres.length === 0) {
     throw new BadRequestError("Necessário preencher os gêneros");
   }
 
@@ -105,6 +103,7 @@ export const createMovieService = async (
   if (alreadyExists) {
     throw new ConflictError("Este filme já existe na base de dados");
   }
+  // Verificar se a requisição veio completa, se sim, chamo o repositorie pra fazer a adição do filme no json e response created. Se não, retorno response badRequest()
 
   // Arrays cast e directors são opcionais
   const createdMovie = await insertMovie(movie);

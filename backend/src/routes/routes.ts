@@ -1,14 +1,17 @@
 import { Router } from 'express';
-import { register, login, googleAuth, deleteMe, checkAuthToken } from '../controllers/authController';
+import { userLoginRouter } from './user_login-routes';
+import { register, googleLogin, deleteMe } from '../controllers/authController';
+import {  checkAuthToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 // Rotas de Autenticação
 router.post('/register', register);
-router.post('/login', login);
-router.post('/auth/google', googleAuth);
+router.post('/auth/google', googleLogin);
 
-// Rotas de Usuário (Exclusão)
+router.use(userLoginRouter);
+
+// Rotas de Usuário
 router.delete('/users/me', checkAuthToken, deleteMe);
 router.delete('/users/:id', checkAuthToken, deleteMe);
 

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import cors from 'cors'
 import express, { Request, Response } from "express";
 import { recommendationRoutes } from "./routes/recommendation-routes";
 import userRoutes from "./routes/routes";
@@ -7,13 +8,18 @@ import { router as playlistRouter } from "./routes/playlist-route";
 import { router as accountRouter } from "./routes/account-routes";
 
 const app = express();
+app.use(cors())
 
 // Middleware para aceitar JSON no body das requisições
 app.use(express.json());
 
-// Registrando as rotas de usuários e autenticação (suporta tanto com quanto sem o prefixo /api)
+// Registrando as rotas de usuários
 app.use("/", userRoutes);
 app.use("/api", userRoutes);
+
+// Registrando as rotas de contas
+app.use("/accounts", accountRouter);
+app.use("/api/accounts", accountRouter);
 
 // Registrando as rotas de filmes
 app.use("/", movieRoutes);
@@ -21,10 +27,7 @@ app.use("/", movieRoutes);
 // Registrando as rotas de playlists
 app.use("/", playlistRouter);
 
-// Registrando as rotas de perfis de usuário (contas)
-app.use("/accounts", accountRouter);
-
-// Rotas de recomendações
+// Rotas quando a URL começar com /recommendations
 app.use("/recommendations", recommendationRoutes);
 
 // Rota principal de verificação da API

@@ -53,7 +53,6 @@ export const getAllMovies = async (search?: string, genre?: string): Promise<Mov
     return matchesGenre && matchesSearch;
   }) as unknown as MovieModel[];
 };
-
 export const insertMovie = async (movie: any) => {
   return await prisma.movie.create({
     data: {
@@ -67,6 +66,8 @@ export const insertMovie = async (movie: any) => {
       genres: Array.isArray(movie.genres) ? movie.genres.join(", ") : movie.genres,
       director: Array.isArray(movie.directors) ? movie.directors.join(", ") : movie.directors,
       cast: Array.isArray(movie.cast) ? movie.cast.join(", ") : movie.cast
+      
+      // url_poster é ignorado aqui pois a tabela não tem essa coluna configurada
     }
   });
 };
