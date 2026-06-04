@@ -33,86 +33,25 @@ export const register = async (req: Request, res: Response) => {
     try {
         const { name, email, password } = req.body;
 
-        // 1. Validação de campos vazios
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: "Todos os campos são obrigatórios" });
-        }
+        const newUser = await authService.registerUser({ name, email, password });
 
-        // 2. Validação do tamanho da senha
-        if (password.length < 8) {
-            return res.status(400).json({ error: "tamanho de senha inválida" });
-        }
-
-        // 3. Verificar se o e-mail já existe 
-        const userExists = await prisma.user.findUnique({ where: { email } });
-        if (userExists) {
-            return res.status(400).json({ error: "conta já está vinculada" });
-        }
-
-        // 4. Criptografar a senha (hash)
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // 5. Salvar no banco
-        const newUser = await prisma.user.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword,
-            },
-        });
-
-        // 6. Retornar sucesso com a mensagem que o BDD espera 
         return res.status(201).json({
             message: "Bem vindo " + newUser.name,
             user: { id: newUser.id, name: newUser.name, email: newUser.email }
         });
 
-    } catch (error) {
-        return res.status(500).json({ error: "Erro interno no servidor" });
+    } catch (error: any) {
+        return res.status(error.status || 500).json({ error: error.message || "Erro interno" });
     }
-}; 
-
+};
 export const googleLogin = async (req: Request, res: Response) => {
     try {
         const { token } = req.body;
 
-        let email = "";
-        let name = "";
-        let googleId = "";
+        // 1. O Controller manda o token e o req.body para o SERVICE fazer o trabalho pesado!
+        const user = await authService.authenticateGoogleUser(token, req.body);
 
-        if (token === "TEST_VALID_TOKEN") {
-            email = req.body.mockEmail;
-            name = req.body.mockName;
-            googleId = "123456789";
-        } else {
-            const ticket = await googleClient.verifyIdToken({
-                idToken: token,
-                audience: process.env.GOOGLE_CLIENT_ID,
-            });
-
-            const payload = ticket.getPayload();
-
-            if (!payload || !payload.email) {
-                return res.status(400).json({
-                    authenticated: false,
-                    error: "Token do Google inválido",
-                });
-            }
-
-            email = payload.email;
-            name = payload.name || "Usuário Google";
-            googleId = payload.sub;
-        }
-
-        let user = await prisma.user.findUnique({ where: { email } });
-
-        if (!user) {
-            user = await prisma.user.create({
-                data: { email, name, googleId },
-            });
-        }
-
+        // 2. Se deu tudo certo, o Controller apenas monta a resposta de sucesso
         return res.status(200).json({
             authenticated: true,
             message: "Bem vindo " + user.name,
@@ -126,10 +65,15 @@ export const googleLogin = async (req: Request, res: Response) => {
                 email: user.email,
             },
         });
-    } catch (error) {
-        return res.status(500).json({
+
+    } catch (error: any) {
+        // 3. Se o Service atirou um erro (throw { status: 400, message: "..." }), o Controller apanha aqui
+        const statusCode = error.status || 500;
+        const errorMessage = error.message || "Erro ao autenticar com o Google";
+
+        return res.status(statusCode).json({
             authenticated: false,
-            error: "Erro ao autenticar com o Google",
+            error: errorMessage,
         });
     }
 };

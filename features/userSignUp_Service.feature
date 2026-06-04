@@ -1,3 +1,4 @@
+@test-signup-service
 Feature: Registo de Novos Utilizadores
     Como um visitante da plataforma
     Desejo poder escolher como realizarei o meu registo, via formulário padrão ou SSO do Google

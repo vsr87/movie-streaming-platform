@@ -1,3 +1,4 @@
+@test-delete-service
 Feature: Exclusão de Conta de Utilizador
     Como um utilizador registado na plataforma
     Desejo poder excluir a minha conta permanentemente
