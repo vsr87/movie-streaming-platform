@@ -31,6 +31,7 @@ export class MovieService {
       cast: movie.cast || "N/A"
     };
   }
+
   async getRawMovieData(id: string) {
     // O service chama o repository, mantendo-se isolado do Prisma
     const movie = await this.repository.findById(id);
@@ -104,7 +105,6 @@ export const createMovieService = async (
   if (alreadyExists) {
     throw new ConflictError("Este filme já existe na base de dados");
   }
-  // Verificar se a requisição veio completa, se sim, chamo o repositorie pra fazer a adição do filme no json e response created. Se não, retorno response badRequest()
 
   // Arrays cast e directors são opcionais
   const createdMovie = await insertMovie(movie);

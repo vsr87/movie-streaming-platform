@@ -197,7 +197,7 @@ export const getMovies = async (req: Request, res: Response) => {
 
 export const deleteMovie = async (req: Request, res: Response) => {
   try {
-    const id = String(req.params.id);
+    const id = String(req.params.id || req.params.title);
     await deleteMovieService(id);
     const allMovies = await getMoviesService();
     res.status(200).json(allMovies); // Será removido no futuro, mas apenas para verificar momentaneamente que a exclusão ocorreu bem
@@ -216,7 +216,7 @@ export const deleteMovie = async (req: Request, res: Response) => {
 
 export const patchMovie = async (req: Request, res: Response) => {
   try {
-    const id = String(req.params.id);
+    const id = String(req.params.id || req.params.title);
     const updates = req.body;
     const movieUpdated = await updateMovieService(id, updates);
     res.status(200).json(movieUpdated); // Retorna todas as informações referentes ao filme
