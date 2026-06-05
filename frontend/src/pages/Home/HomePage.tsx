@@ -119,21 +119,45 @@ export function HomePage({ userId, onGoToPlaylists }: HomePageProps) {
   return (
     <div className="home-page">
       <header className="home-header">
-        <img src={cinemaLogo} width="300" alt="Cinema" />
+        <img src={cinemaLogo} width="180" alt="Cinema" />
 
-        <nav className="home-nav">
-          <button className="home-nav-button active" type="button">
-            Página Principal
-          </button>
+        <div className="home-header-right">
+          <nav className="home-nav">
+            <button className="home-nav-button active" type="button">
+              Página Principal
+            </button>
 
-          <button
-            className="home-nav-button"
-            type="button"
-            onClick={onGoToPlaylists}
-          >
-            Minhas Playlists
-          </button>
-        </nav>
+            <button
+              className="home-nav-button"
+              type="button"
+              onClick={onGoToPlaylists}
+            >
+              Minhas Playlists
+            </button>
+          </nav>
+
+          <div className="profile-dropdown">
+            <button className="profile-trigger" type="button">
+              <span className="profile-avatar">U</span>
+              <span className="profile-arrow"></span>
+            </button>
+            <div className="profile-menu">
+              <button type="button" className="profile-menu-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Perfil
+              </button>
+              <button type="button" className="profile-menu-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                Histórico
+              </button>
+              <div className="profile-menu-divider"></div>
+              <button type="button" className="profile-menu-item logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
       </header>
 
       <main className="home-content">
