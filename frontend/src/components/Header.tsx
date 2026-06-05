@@ -5,9 +5,10 @@ interface HeaderProps {
   onGoToHome?: () => void;
   onGoToPlaylists?: () => void;
   onLogout?: () => void;
+  onGoToHistory?: () => void;
 }
 
-export function Header({ activePage, onGoToHome, onGoToPlaylists, onLogout }: HeaderProps) {
+export function Header({ activePage, onGoToHome, onGoToPlaylists, onLogout, onGoToHistory}: HeaderProps) {
   return (
     <header className="home-header">
       <img 
@@ -47,7 +48,7 @@ export function Header({ activePage, onGoToHome, onGoToPlaylists, onLogout }: He
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               Perfil
             </button>
-            <button type="button" className="profile-menu-item">
+            <button type="button" className="profile-menu-item" onClick={onGoToHistory}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
               Histórico
             </button>
