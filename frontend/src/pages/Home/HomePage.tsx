@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import cinemaLogo from "../../assets/cinema_logo.png";
 import { MovieCard } from "../../components/MovieCard";
+import { Header } from "../../components/Header"; // Certifique-se de criar este componente em src/components/Header.tsx
 import { getMovies } from "../../services/movieApi";
 import {
   addMovieToPlaylist,
@@ -12,9 +12,10 @@ import "./HomePage.css";
 interface HomePageProps {
   userId: string;
   onGoToPlaylists: () => void;
+  onGoToHome?: () => void;
 }
 
-export function HomePage({ userId, onGoToPlaylists }: HomePageProps) {
+export function HomePage({ userId, onGoToPlaylists, onGoToHome }: HomePageProps) {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loadingMovies, setLoadingMovies] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,9 +25,7 @@ export function HomePage({ userId, onGoToPlaylists }: HomePageProps) {
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false);
 
-  const [playlistMessage, setPlaylistMessage] = useState<PageMessage | null>(
-    null,
-  );
+  const [playlistMessage, setPlaylistMessage] = useState<PageMessage | null>(null);
 
   useEffect(() => {
     async function loadMovies() {
@@ -118,54 +117,22 @@ export function HomePage({ userId, onGoToPlaylists }: HomePageProps) {
 
   return (
     <div className="home-page">
-      <header className="home-header">
-        <img src={cinemaLogo} width="180" alt="Cinema" />
-
-        <div className="home-header-right">
-          <nav className="home-nav">
-            <button className="home-nav-button active" type="button">
-              Página Principal
-            </button>
-
-            <button
-              className="home-nav-button"
-              type="button"
-              onClick={onGoToPlaylists}
-            >
-              Minhas Playlists
-            </button>
-          </nav>
-
-          <div className="profile-dropdown">
-            <button className="profile-trigger" type="button">
-              <span className="profile-avatar">U</span>
-              <span className="profile-arrow"></span>
-            </button>
-            <div className="profile-menu">
-              <button type="button" className="profile-menu-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Perfil
-              </button>
-              <button type="button" className="profile-menu-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
-                Histórico
-              </button>
-              <div className="profile-menu-divider"></div>
-              <button type="button" className="profile-menu-item logout">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Sair
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* HEADER COMPONENTIZADO RECEBENDO AS AÇÕES DA PÁGINA */}
+      <Header 
+        activePage="home" 
+        onGoToHome={onGoToHome}
+        onGoToPlaylists={onGoToPlaylists}
+        onLogout={() => {
+          console.log("Usuário deslogado");
+        }}
+      />
 
       <main className="home-content">
         <section className="home-hero">
           <p className="home-eyebrow">Catálogo</p>
           <h1>Página Principal</h1>
           <p>
-            Explore o catálogo de filmes e organize seus favoritos em playlists.
+            Explore o catálogo de filmes e organize seus favoritos in playlists.
           </p>
         </section>
 
