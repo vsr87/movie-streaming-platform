@@ -1057,7 +1057,7 @@ export function AccountPage({
               <section className="border-t border-brand-gold/10 pt-4">
                 <h4 className="text-md font-bold text-brand-gold mb-2">Suporte</h4>
                 <p className="leading-relaxed">
-                  Caso seu problema não esteja listado ou necessite de suporte técnico direto, entre em contato com a nossa equipe de suporte pelo e-mail: <span className="text-brand-gold">suporte@vintagecinema.com</span>. Nosso tempo médio de resposta é de até 24 horas úteis.
+                  Caso seu problema não esteja listado ou necessite de suporte técnico direto, entre em contato com a nossa equipe de suporte pelo e-mail: <span className="text-brand-gold">suportecinema@email.com</span>. Nosso tempo médio de resposta é de até 24 horas úteis.
                 </p>
               </section>
             </div>
