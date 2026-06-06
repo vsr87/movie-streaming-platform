@@ -19,7 +19,7 @@ export function AccountPage({
 }: AccountPageProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState("............");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   // Original values to check if there are changes
@@ -43,6 +43,7 @@ export function AccountPage({
       setPhotoUrl(profile.photo);
       setOriginalName(profile.name);
       setOriginalEmail(profile.email);
+      setPassword("............");
     } catch (err: any) {
       setErrorMessage(err.message || "Erro ao carregar dados do perfil.");
     } finally {
@@ -57,7 +58,7 @@ export function AccountPage({
   const handleCancel = () => {
     setName(originalName);
     setEmail(originalEmail);
-    setPassword("");
+    setPassword("............");
     setSuccessMessage(null);
     setErrorMessage(null);
   };
@@ -79,7 +80,7 @@ export function AccountPage({
       payload.email = email;
       hasChanges = true;
     }
-    if (password) {
+    if (password && password !== "............") {
       payload.password = password;
       hasChanges = true;
     }
@@ -93,7 +94,7 @@ export function AccountPage({
     try {
       const res = await updateProfile(userId, payload);
       setSuccessMessage(res.message || "Alterações salvas com sucesso");
-      setPassword("");
+      setPassword("............");
       
       // Update original values
       if (payload.name) setOriginalName(payload.name);
@@ -150,23 +151,23 @@ export function AccountPage({
 
       {/* BEGIN: MainSidebar */}
       <aside
-        className="w-72 bg-[#121414] flex flex-col h-screen fixed left-0 top-0 border-r border-[#FFC107]/20 p-8"
+        className="w-72 bg-brand-dark flex flex-col h-screen fixed left-0 top-0 border-r border-brand-gold/20 p-8"
         data-purpose="main-navigation"
       >
         <div className="mb-12">
-          <h1 className="text-[#FFC107] text-2xl font-extrabold tracking-tight">Cinema</h1>
+          <h1 className="text-brand-gold text-2xl font-extrabold tracking-tight">Cinema</h1>
         </div>
 
         {/* User Mini Profile */}
         <div className="flex items-center gap-3 mb-10 p-2" data-purpose="user-sidebar-profile">
           <img
             alt={name || "User"}
-            className="w-10 h-10 rounded-full border border-[#FFC107]/50 object-cover"
+            className="w-10 h-10 rounded-full border border-brand-gold/50 object-cover"
             src={avatarSource}
           />
           <div>
             <p className="text-sm font-bold text-white leading-tight">{name || "Carregando..."}</p>
-            <p className="text-[10px] text-[#FFC107]/70 uppercase tracking-widest">Premium Member</p>
+            <p className="text-[10px] text-brand-gold/70 uppercase tracking-widest">Premium Member</p>
           </div>
         </div>
 
@@ -174,7 +175,7 @@ export function AccountPage({
         <nav className="flex-1 space-y-2">
           <button
             onClick={onGoToHome}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-[#FFC107] transition-colors duration-200 text-left"
+            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-brand-gold transition-colors duration-200 text-left"
             type="button"
           >
             <svg
@@ -194,52 +195,10 @@ export function AccountPage({
             <span className="text-sm font-medium">Dashboard</span>
           </button>
 
-          <button
-            onClick={onGoToPlaylists}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-[#FFC107] transition-colors duration-200 text-left"
-            type="button"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-              ></path>
-            </svg>
-            <span className="text-sm font-medium">Minhas Playlists</span>
-          </button>
+
 
           <button
-            onClick={onGoToHistory}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-[#FFC107] transition-colors duration-200 text-left"
-            type="button"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-              ></path>
-            </svg>
-            <span className="text-sm font-medium">Histórico</span>
-          </button>
-
-          <button
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl active-nav-item text-[#FFC107] text-left"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl active-nav-item text-brand-gold text-left"
             type="button"
           >
             <svg
@@ -261,13 +220,13 @@ export function AccountPage({
         </nav>
 
         {/* Bottom Actions */}
-        <div className="mt-auto pt-6 border-t border-[#FFC107]/10 space-y-2">
+        <div className="mt-auto pt-6 border-t border-brand-gold/10 space-y-2">
           <a
             className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white transition-colors duration-200"
             href="#"
           >
             <svg
-              className="w-5 h-5 text-[#FFC107]"
+              className="w-5 h-5 text-brand-gold"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -311,18 +270,18 @@ export function AccountPage({
       <main className="flex-1 ml-72 p-12 bg-black min-h-screen" data-purpose="account-settings-content">
         {/* Page Header */}
         <header className="mb-12">
-          <h2 className="text-4xl font-extrabold text-[#FFC107] mb-2">Configurações da Conta</h2>
+          <h2 className="text-4xl font-extrabold text-brand-gold mb-2">Configurações da Conta</h2>
           <p className="text-gray-400 text-lg">Gerencie suas informações pessoais e preferências de visualização.</p>
         </header>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFC107]"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-gold"></div>
             <p className="text-gray-400 mt-4 font-semibold">Carregando dados da conta...</p>
           </div>
         ) : (
           <div
-            className="bg-[#1A1C1C]/50 border border-[#FFC107]/10 rounded-3xl p-10 max-w-5xl mx-auto"
+            className="bg-brand-dark/50 border border-brand-gold/10 rounded-3xl p-10 max-w-5xl mx-auto"
             data-purpose="settings-form-container"
           >
             {/* Feedback Alerts */}
@@ -348,7 +307,7 @@ export function AccountPage({
               <div className="relative">
                 <img
                   alt={name || "User"}
-                  className="w-32 h-32 rounded-full border-4 border-[#FFC107]/20 object-cover shadow-2xl"
+                  className="w-32 h-32 rounded-full border-4 border-brand-gold/20 object-cover shadow-2xl"
                   src={avatarSource}
                 />
               </div>
@@ -359,7 +318,7 @@ export function AccountPage({
                   type="button"
                   onClick={handlePhotoUploadClick}
                   disabled={isSaving}
-                  className="bg-[#FFC107] text-[#121414] px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50"
+                  className="bg-brand-gold text-brand-dark px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50"
                 >
                   {isSaving ? "Uploading..." : "Upload New Photo"}
                 </button>
@@ -376,13 +335,13 @@ export function AccountPage({
                   </label>
                   <div className="relative">
                     <input
-                      className="w-full bg-black/40 border border-[#FFC107]/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-[#FFC107] transition-all input-glow"
+                      className="w-full bg-black/40 border border-brand-gold/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-brand-gold transition-all input-glow"
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#FFC107]">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-gold">
                       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
                       </svg>
@@ -397,13 +356,13 @@ export function AccountPage({
                   </label>
                   <div className="relative">
                     <input
-                      className="w-full bg-black/40 border border-[#FFC107]/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-[#FFC107] transition-all input-glow"
+                      className="w-full bg-black/40 border border-brand-gold/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-brand-gold transition-all input-glow"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#FFC107]">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-gold">
                       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
                         <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
@@ -420,13 +379,22 @@ export function AccountPage({
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full bg-black/40 border border-[#FFC107]/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-[#FFC107] transition-all input-glow"
+                    className="w-full bg-black/40 border border-brand-gold/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-brand-gold transition-all input-glow"
                     type="password"
-                    placeholder="Mantenha em branco para não alterar"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => {
+                      if (password === "............") {
+                        setPassword("");
+                      }
+                    }}
+                    onBlur={() => {
+                      if (password === "") {
+                        setPassword("............");
+                      }
+                    }}
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#FFC107]/50">
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-gold/50">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                       <path
                         clipRule="evenodd"
@@ -438,14 +406,14 @@ export function AccountPage({
                   </div>
                 </div>
                 <p className="mt-2 text-[11px] text-gray-500">
-                  A senha deve conter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e símbolos.
+                  A senha deve conter pelo menos 8 caracteres, incluindo e símbolos.
                 </p>
               </div>
 
               {/* Language and Quality Selectors */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
-                  className="w-full bg-[#FFC107] flex items-center justify-between px-6 py-4 rounded-xl text-[#121414] font-bold text-sm"
+                  className="w-full bg-brand-gold flex items-center justify-between px-6 py-4 rounded-xl text-brand-dark font-bold text-sm"
                   type="button"
                 >
                   <div className="flex items-center gap-3">
@@ -476,11 +444,11 @@ export function AccountPage({
                   </svg>
                 </button>
                 <button
-                  className="w-full bg-[#FFC107] flex items-center justify-between px-6 py-4 rounded-xl text-[#121414] font-bold text-sm"
+                  className="w-full bg-brand-gold flex items-center justify-between px-6 py-4 rounded-xl text-brand-dark font-bold text-sm"
                   type="button"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="bg-[#121414] text-[#FFC107] text-[10px] px-1.5 py-0.5 rounded font-black">HD</span>
+                    <span className="bg-brand-dark text-brand-gold text-[10px] px-1.5 py-0.5 rounded font-black">HD</span>
                     <span>Qualidade: 4K Ultra HD</span>
                   </div>
                   <svg
@@ -495,19 +463,19 @@ export function AccountPage({
                 </button>
               </div>
 
-              <hr className="border-[#FFC107]/10 my-8" />
+              <hr className="border-brand-gold/10 my-8" />
 
               {/* Form Actions */}
               <div className="flex justify-end gap-4">
                 <button
                   onClick={handleCancel}
-                  className="px-8 py-3 border border-[#FFC107] rounded-xl text-[#FFC107] font-bold text-sm hover:bg-[#FFC107]/5 transition-colors"
+                  className="px-8 py-3 border border-brand-gold rounded-xl text-brand-gold font-bold text-sm hover:bg-brand-gold/5 transition-colors"
                   type="button"
                 >
                   Cancelar
                 </button>
                 <button
-                  className="px-8 py-3 bg-[#FFC107] border border-[#FFC107] rounded-xl text-[#121414] font-bold text-sm hover:bg-yellow-500 transition-colors shadow-lg shadow-[#FFC107]/20 disabled:opacity-50"
+                  className="px-8 py-3 bg-brand-gold border border-brand-gold rounded-xl text-brand-dark font-bold text-sm hover:bg-yellow-500 transition-colors shadow-lg shadow-brand-gold/20 disabled:opacity-50"
                   type="submit"
                   disabled={isSaving}
                 >
@@ -521,10 +489,10 @@ export function AccountPage({
         {/* Info Cards Footer */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 max-w-5xl mx-auto" data-purpose="status-cards">
           {/* Security Card */}
-          <div className="bg-[#FFC107] p-6 rounded-[24px] flex items-center gap-5">
+          <div className="bg-brand-gold p-6 rounded-[24px] flex items-center gap-5">
             <div className="bg-black p-3 rounded-xl">
               <svg
-                className="h-6 w-6 text-[#FFC107]"
+                className="h-6 w-6 text-brand-gold"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -539,16 +507,16 @@ export function AccountPage({
               </svg>
             </div>
             <div>
-              <h4 className="text-[#121414] font-extrabold text-lg leading-tight">Segurança da Conta</h4>
-              <p className="text-[#121414]/70 text-sm font-medium">A autenticação de dois fatores está ativa para sua proteção.</p>
+              <h4 className="text-brand-dark font-extrabold text-lg leading-tight">Segurança da Conta</h4>
+              <p className="text-brand-dark/70 text-sm font-medium">A autenticação de dois fatores está ativa para sua proteção.</p>
             </div>
           </div>
 
           {/* Recent Access Card */}
-          <div className="bg-[#FFC107] p-6 rounded-[24px] flex items-center gap-5">
+          <div className="bg-brand-gold p-6 rounded-[24px] flex items-center gap-5">
             <div className="bg-black p-3 rounded-xl">
               <svg
-                className="h-6 w-6 text-[#FFC107]"
+                className="h-6 w-6 text-brand-gold"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -563,8 +531,8 @@ export function AccountPage({
               </svg>
             </div>
             <div>
-              <h4 className="text-[#121414] font-extrabold text-lg leading-tight">Acessos Recentes</h4>
-              <p className="text-[#121414]/70 text-sm font-medium">Você tem 3 dispositivos conectados à sua conta no momento.</p>
+              <h4 className="text-brand-dark font-extrabold text-lg leading-tight">Acessos Recentes</h4>
+              <p className="text-brand-dark/70 text-sm font-medium">Você tem 3 dispositivos conectados à sua conta no momento.</p>
             </div>
           </div>
         </div>
