@@ -9,6 +9,30 @@ Given o usuário está logado
 When acessa a tela de perfil
 Then o sistema exibe os dados cadastrados do usuário
 
+
+
+
+Scenario: Visualizar perfil do usuário 
+Given o usuário "Carlos" está logado no sistema com o e-mail "carlos@email.com" 
+When acessa a tela de perfil 
+Then o sistema exibe o nome "Carlos", o e-mail "carlos@email.com" e a foto de perfil "carlos.png" na interface
+
+Scenario: Alterar nome do usuário com sucesso 
+Given o usuário "Carlos" está na tela de edição de perfil 
+When altera apenas o seu nome para "Carlos Silva" 
+And salva as alterações 
+Then o sistema exibe a mensagem "Alterações salvas com sucesso" 
+And o perfil passa a exibir o nome atualizado "Carlos Silva"
+
+Scenario: Atualizar senha com senha inválida 
+Given o usuário "Carlos" está na tela de edição de perfil 
+When altera a sua senha informando "123" (senha fora do padrão exigido) 
+And salva a alteração
+Then o sistema exibe a mensagem "Senha fora do padrão exigido"
+And a senha original de "Carlos" é mantida 
+
+
+
 Scenario: Editar perfil com sucesso
 
 Given o usuário está logado
