@@ -30,6 +30,7 @@ function App() {
   if (currentPage === "history") {
     return (
       <HistoryPage
+        userId={currentUser.id}
         onGoToHome={() => setCurrentPage("home")}
         onGoToPlaylists={() => setCurrentPage("playlists")}
         onGoToHistory={() => setCurrentPage("history")}

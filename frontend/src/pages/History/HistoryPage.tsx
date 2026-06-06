@@ -1,31 +1,74 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "../../components/Header";
+import { getHistoryByUserId } from "../../services/historyApi";
 import "./HistoryPage.css";
 
 interface HistoryPageProps {
+  userId: string;
   onGoToHome: () => void;
   onGoToPlaylists: () => void;
   onGoToHistory: () => void;
 }
 
 interface HistoryItem {
-  id: number;
+  id: string;
   date: string;
   title: string;
 }
 
-export function HistoryPage({ onGoToHome, onGoToPlaylists, onGoToHistory }: HistoryPageProps) {
-  // Lista inicial com dados fictícios baseada nos seus componentes de filmes
+export function HistoryPage({ userId, onGoToHome, onGoToPlaylists, onGoToHistory }: HistoryPageProps) {
   const [historyList, setHistoryList] = useState<HistoryItem[]>([
-    { id: 1, date: "21/05/2026", title: "O Poderoso Chefão" },
-    { id: 2, date: "02/05/2026", title: "Casablanca" },
-    { id: 3, date: "02/05/2026", title: "Cantando na Chuva" },
-    { id: 4, date: "01/05/2026", title: "Psicose" },
-    { id: 5, date: "26/04/2026", title: "13 Going on 30" },
-    { id: 6, date: "26/04/2026", title: "Twilight" },
   ]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  function handleHideItem(id: number) {
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadHistory() {
+      setIsLoading(true);
+
+      try {
+        const items = await getHistoryByUserId(userId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setHistoryList(
+          items.map((item) => {
+            const rawDate = item.watched_at ?? item.watchedAt ?? "";
+            const watchedDate = rawDate
+              ? new Date(rawDate).toLocaleDateString("pt-BR")
+              : "";
+
+            return {
+              id: item.id,
+              date: watchedDate,
+              title: item.title ?? "Filme sem título",
+            };
+          }),
+        );
+      } catch (error) {
+        console.warn("Erro ao carregar histórico", error);
+
+        if (isMounted) {
+          setHistoryList([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
+  function handleHideItem(id: string) {
     setHistoryList(prev => prev.filter(item => item.id !== id));
   }
 
@@ -62,7 +105,9 @@ export function HistoryPage({ onGoToHome, onGoToPlaylists, onGoToHistory }: Hist
           )}
         </section>
 
-        {historyList.length > 0 ? (
+        {isLoading ? (
+          <div className="history-empty-box">Carregando histórico...</div>
+        ) : historyList.length > 0 ? (
           /* Lista com scroll caso fique muito grande */
           <div className="history-scroll-container">
             <div className="history-list-dark">

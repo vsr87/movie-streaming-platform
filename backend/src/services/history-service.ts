@@ -32,14 +32,13 @@ class HistoryService {
   }
 
   async showUserHistory(id_user: string) {
-    
      const history = await historyRepository.getUserHistory(id_user);
-     return history.map(record => {
 
+     return history.map(record => {
        const justTheDate = record.watchedAt.toISOString().split('T')[0];
-       
        return {
          ...record,
+         title: record.movie.title,
          watched_at: justTheDate,
        };
      });
