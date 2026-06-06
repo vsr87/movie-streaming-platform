@@ -31,6 +31,14 @@ module.exports = {
 
   implemented: {
     paths: [
+      '../features/MovieMetadata.feature',
+      '../features/Player.feature',
+      '../features/userSignUp.feature',
+      '../features/recommendation.feature',
+      '../features/gerenciar_playlists_servico.feature',
+      '../features/user_login_service.feature',
+      '../features/userDeletion.feature',
+      '../features/moviesmanagement.feature',
       '../features/account.feature'
     ],
     require: ['tests/step_definitions/*.ts'],

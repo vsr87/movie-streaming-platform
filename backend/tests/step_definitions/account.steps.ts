@@ -67,10 +67,6 @@ When('altera o seu e-mail para {string}', async (newEmail: string) => {
 When('salva as alterações', () => {
 });
 
-Then('o sistema exibe a mensagem {string}', (message: string) => {
-  assert.strictEqual(response.data.message, message);
-});
-
 Then('exibe a mensagem {string}', (message: string) => {
   assert.strictEqual(response.data.message, message);
 });
