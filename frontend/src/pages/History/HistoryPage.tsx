@@ -6,6 +6,7 @@ interface HistoryPageProps {
   onGoToHome: () => void;
   onGoToPlaylists: () => void;
   onGoToHistory: () => void;
+  onGoToProfile?: () => void;
 }
 
 interface HistoryItem {
@@ -14,7 +15,7 @@ interface HistoryItem {
   title: string;
 }
 
-export function HistoryPage({ onGoToHome, onGoToPlaylists, onGoToHistory }: HistoryPageProps) {
+export function HistoryPage({ onGoToHome, onGoToPlaylists, onGoToHistory, onGoToProfile }: HistoryPageProps) {
   // Lista inicial com dados fictícios baseada nos seus componentes de filmes
   const [historyList, setHistoryList] = useState<HistoryItem[]>([
     { id: 1, date: "21/05/2026", title: "O Poderoso Chefão" },
@@ -41,6 +42,7 @@ export function HistoryPage({ onGoToHome, onGoToPlaylists, onGoToHistory }: Hist
         onGoToPlaylists={onGoToPlaylists}
         onLogout={() => console.log("Usuário deslogado do histórico")}
         onGoToHistory={onGoToHistory}
+        onGoToProfile={onGoToProfile}
       />
 
       <main className="home-content">

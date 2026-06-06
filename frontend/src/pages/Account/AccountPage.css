@@ -1,0 +1,33 @@
+/* AccountPage.css */
+
+.sidebar-border {
+  border-right: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.input-glow:focus {
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.5);
+  border-color: #FFC107;
+}
+
+.active-nav-item {
+  background-color: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+/* Custom scrollbar for brand-dark */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121414;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #FFC107;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e0a800;
+}

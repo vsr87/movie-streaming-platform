@@ -16,9 +16,10 @@ interface HomePageProps {
   onGoToHome?: () => void;
   onGoToHistory: () => void;
   onSelectMovie: (movie: Movie) => void;
+  onGoToProfile?: () => void;
 }
 
-export function HomePage({ userId, onGoToPlaylists, onGoToHome, onGoToHistory, onSelectMovie }: HomePageProps) {
+export function HomePage({ userId, onGoToPlaylists, onGoToHome, onGoToHistory, onSelectMovie, onGoToProfile }: HomePageProps) {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loadingMovies, setLoadingMovies] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,6 +136,7 @@ export function HomePage({ userId, onGoToPlaylists, onGoToHome, onGoToHistory, o
           console.log("Usuário deslogado");
         }}
         onGoToHistory={onGoToHistory}
+        onGoToProfile={onGoToProfile}
       />
 
       <main className="home-content">
