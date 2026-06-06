@@ -21,7 +21,7 @@
     "test:gui": "NODE_ENV=test cucumber-js --require-module ts-node/register --require tests/step_definitions/**/*.ts --tags \"@gui\"",
     "test:signup": "NODE_ENV=test cucumber-js --require-module ts-node/register --require tests/step_definitions/**/*.ts --tags \"@test-signup\"",
     "test:signupservice": "NODE_ENV=test cucumber-js ../features/userSignUp.feature --require-module ts-node/register --require tests/step_definitions/**/*.ts --tags \"@test-signup-service\"",
-    "test:account": "cucumber-js ../features/account.feature --require-module ts-node/register --require tests/step_definitions/**/*.ts",
+    "test:cucumber:implemented": "cucumber-js -p implemented",
     "test:movies": "NODE_ENV=test cucumber-js -p movies"
   },
   "keywords": [],
