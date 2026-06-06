@@ -11,6 +11,13 @@ class HistoryRepository {
                 userId: id_user,
                 is_hidden: false
             },
+            include: {
+                movie: {
+                    select: {
+                        title: true,
+                    },
+                },
+            },
             orderBy: {
                 watchedAt: 'desc' // Ordena do mais recente para o mais antigo
             }

@@ -46,6 +46,7 @@ function App() {
         path="/history"
         element={
           <HistoryPage
+            userId={currentUserId}
             onGoToHome={() => navigate("/")}
             onGoToPlaylists={() => navigate("/playlists")}
             onGoToHistory={() => navigate("/history")}
