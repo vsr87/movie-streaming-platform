@@ -2,10 +2,12 @@ import { useState } from "react";
 import "./App.css";
 import { HomePage } from "./pages/Home/HomePage";
 import { MinhasPlaylistsPage } from "./pages/MinhasPlaylists/MinhasPlaylistsPage";
+import { HistoryPage } from "./pages/History/HistoryPage"; 
 import { MovieDetailsPage } from "./pages/MovieDetails/MovieDetailsPage";
 import type { Movie } from "./types";
 
-type CurrentPage = "home" | "playlists" | "movie-details";
+// 2. ADICIONADO "history" NAS OPÇÕES DE TELA
+type CurrentPage = "home" | "playlists" | "history" | "movie-details";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<CurrentPage>("home");
@@ -25,6 +27,15 @@ function App() {
     );
   }
 
+  if (currentPage === "history") {
+    return (
+      <HistoryPage
+        onGoToHome={() => setCurrentPage("home")}
+        onGoToPlaylists={() => setCurrentPage("playlists")}
+        onGoToHistory={() => setCurrentPage("history")}
+      />
+    );
+  }
   if (currentPage === "movie-details" && selectedMovie) {
     return (
       <MovieDetailsPage
@@ -39,6 +50,8 @@ function App() {
     <HomePage
       userId={currentUser.id}
       onGoToPlaylists={() => setCurrentPage("playlists")}
+      onGoToHome={() => setCurrentPage("home")}
+      onGoToHistory={() => setCurrentPage("history")}
       onSelectMovie={(movie) => {
         setSelectedMovie(movie);
         setCurrentPage("movie-details");

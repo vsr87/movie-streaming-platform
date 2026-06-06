@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import cinemaLogo from "../../assets/cinema_logo.png";
 import { MovieCard } from "../../components/MovieCard";
+import { Header } from "../../components/Header"; 
+import { KeepWatchingCard } from "../../components/KeepWatchingCard"; // Certifique-se de que o card está importado
 import { getMovies } from "../../services/movieApi";
 import {
   addMovieToPlaylist,
@@ -12,10 +13,12 @@ import "./HomePage.css";
 interface HomePageProps {
   userId: string;
   onGoToPlaylists: () => void;
+  onGoToHome?: () => void;
+  onGoToHistory: () => void;
   onSelectMovie: (movie: Movie) => void;
 }
 
-export function HomePage({ userId, onGoToPlaylists, onSelectMovie }: HomePageProps) {
+export function HomePage({ userId, onGoToPlaylists, onGoToHome, onGoToHistory, onSelectMovie }: HomePageProps) {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loadingMovies, setLoadingMovies] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,9 +28,14 @@ export function HomePage({ userId, onGoToPlaylists, onSelectMovie }: HomePagePro
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false);
 
-  const [playlistMessage, setPlaylistMessage] = useState<PageMessage | null>(
-    null,
-  );
+  const [playlistMessage, setPlaylistMessage] = useState<PageMessage | null>(null);
+
+  // Lista fictícia/mockada apenas para você ver o carrossel funcionando antes de ligar à API
+  const keepWatchingMovies = [
+    { id: 1, title: "13 Going on 30", percentage: 75, thumb: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=60" },
+    { id: 2, title: "Twilight", percentage: 40, thumb: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60" },
+    { id: 3, title: "O Poderoso Chefão", percentage: 90, thumb: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=500&auto=format&fit=crop&q=60" },
+  ];
 
   useEffect(() => {
     async function loadMovies() {
@@ -119,30 +127,22 @@ export function HomePage({ userId, onGoToPlaylists, onSelectMovie }: HomePagePro
 
   return (
     <div className="home-page">
-      <header className="home-header">
-        <img src={cinemaLogo} width="300" alt="Cinema" />
-
-        <nav className="home-nav">
-          <button className="home-nav-button active" type="button">
-            Página Principal
-          </button>
-
-          <button
-            className="home-nav-button"
-            type="button"
-            onClick={onGoToPlaylists}
-          >
-            Minhas Playlists
-          </button>
-        </nav>
-      </header>
+      <Header 
+        activePage="home" 
+        onGoToHome={onGoToHome}
+        onGoToPlaylists={onGoToPlaylists}
+        onLogout={() => {
+          console.log("Usuário deslogado");
+        }}
+        onGoToHistory={onGoToHistory}
+      />
 
       <main className="home-content">
         <section className="home-hero">
           <p className="home-eyebrow">Catálogo</p>
           <h1>Página Principal</h1>
           <p>
-            Explore o catálogo de filmes e organize seus favoritos em playlists.
+            Explore o catálogo de filmes e organize seus favoritos in playlists.
           </p>
         </section>
 
@@ -153,6 +153,35 @@ export function HomePage({ userId, onGoToPlaylists, onSelectMovie }: HomePagePro
             {playlistMessage.text}
           </p>
         )}
+
+        {/* 🚀 SEÇÃO ADICIONADA: CONTINUAR ASSISTINDO (CARROSSEL) */}
+        <section className="keep-watching-section">
+          <div className="section-title-wrapper">
+            <h2>Continuar Assistindo</h2>
+            <div className="section-title-line"></div> {/* Linha que vai até o outro lado */}
+          </div>
+          
+          {/* Espaço reservado para o carrossel horizontal */}
+          <div className="keep-watching-scrollview">
+            {keepWatchingMovies.map((item) => (
+              <div key={item.id} className="keep-watching-scroll-item">
+                <KeepWatchingCard
+                  title={item.title}
+                  thumbnailUrl={item.thumb}
+                  progressPercentage={item.percentage}
+                  onClick={() => console.log(`Clicou no filme: ${item.title}`)}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* SEÇÃO ORIGINAL DO GRID DE FILMES */}
+        <section className="catalog-section">
+          <div className="section-title-wrapper">
+            <h2>Todos os Filmes</h2>
+            <div className="section-title-line"></div> {/* Linha que vai até o outro lado */}
+          </div>
 
         {loadingMovies && (
           <p className="catalog-empty-message">Carregando filmes...</p>
@@ -174,8 +203,10 @@ export function HomePage({ userId, onGoToPlaylists, onSelectMovie }: HomePagePro
             />
           ))}
         </div>
+      </section>
       </main>
 
+      {/* MODAL DE PLAYLIST */}
       {isPlaylistModalOpen && selectedMovie && (
         <div className="catalog-modal-backdrop">
           <section className="catalog-modal">
