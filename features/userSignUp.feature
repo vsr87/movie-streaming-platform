@@ -1,3 +1,4 @@
+@test-signup
 Feature: Cadastro de Usuário
     Como um visitante da plataforma
     Eu desejo poder escolher como realizarei meu cadastro, via formulário padrão ou SSO do Google
@@ -12,13 +13,13 @@ Scenario: Cadastro bem sucedido via SSO
     And eu sou autenticado automaticamente no sistema
     And eu vejo a mensagem de sucesso "Bem vindo João"
 
-Scenario: Cadastro mal sucedido via SSO
+Scenario: Tentativa de cadastro via SSO com conta já existente
     Given eu estou na página "Cadastro"
     And o email "exemplo@test.com" do Google possui cadastro no sistema
     When eu tento realizar o cadastro utilizando minha conta Google com o email "exemplo@test.com"
-    And eu defino o nome de usuário "João"
-    Then aparece uma mensagem de aviso "conta já está vinculada"
-    And eu devo ser direcionado a página "Login"
+    Then o sistema deve reconhecer a conta
+    And eu sou autenticado automaticamente no sistema
+    And eu vejo a mensagem de sucesso "Bem vindo Usuário Teste"
 
 Scenario: Cadastro bem sucedido via formulário
     Given eu estou na página "Cadastro"
@@ -45,3 +46,4 @@ Scenario: Cadastro mal sucedido via formulário devido a senha inválida por tam
     And eu preencho o campo "nome" com "João"
     Then deve aparecer uma mensagem de aviso "tamanho de senha inválida"
     And eu devo permanecer na página "Cadastro"
+

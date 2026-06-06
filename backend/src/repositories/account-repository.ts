@@ -1,4 +1,4 @@
-import prisma from '../database/prisma';
+import { prisma } from '../database/prisma';
 
 /**
  * Classe de repositório responsável pelas operações de persistência

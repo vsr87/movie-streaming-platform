@@ -91,11 +91,25 @@ export const updateName = async (req: Request, res: Response) => {
 /**
  * Atualiza a senha do usuário no sistema.
  */
+export const isValidPasswordPattern = (password: string): boolean => {
+   if (!password || password.length < 6) return false;
+   
+   const hasUpperCase = /[A-Z]/.test(password);
+   const hasSpecialChar = /[@#$!%*?&]/.test(password);
+   
+   return hasUpperCase && hasSpecialChar;
+};
+
 export const updatePassword = async (req: Request, res: Response) => {
    try {
-      // Extrai a nova senha do corpo da requisição e envia para o serviço
-      const result = await service.updatePassword(req.params.id as string, req.body.password);
-      
+      const { password } = req.body;
+
+      // Aplicação da condicional decomposta e extraída
+      if (!isValidPasswordPattern(password)) {
+         return res.status(400).json({ message: 'Senha fora do padrão exigido' });
+      }
+
+      const result = await service.updatePassword(req.params.id as string, password);
       res.status(200).json({ message: 'Alterações salvas com sucesso', user: result });
    } catch (err: any) {
       handleError(err, res);
