@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Header } from "../../components/Header";
-import { getHistoryByUserId } from "../../services/historyApi";
+import {
+  getHistoryByUserId,
+  hideAllHistory,
+  hideHistoryMovie,
+} from "../../services/historyApi";
 import "./HistoryPage.css";
 
 interface HistoryPageProps {
@@ -12,8 +16,10 @@ interface HistoryPageProps {
 
 interface HistoryItem {
   id: string;
+  movieId: string;
   date: string;
   title: string;
+  watchedAt: string;
 }
 
 export function HistoryPage({ userId, onGoToHome, onGoToPlaylists, onGoToHistory }: HistoryPageProps) {
@@ -36,15 +42,17 @@ export function HistoryPage({ userId, onGoToHome, onGoToPlaylists, onGoToHistory
 
         setHistoryList(
           items.map((item) => {
-            const rawDate = item.watched_at ?? item.watchedAt ?? "";
-            const watchedDate = rawDate
-              ? new Date(rawDate).toLocaleDateString("pt-BR")
+            const exactWatchedAt = item.watchedAt ?? item.watched_at ?? "";
+            const watchedDate = exactWatchedAt
+              ? new Date(exactWatchedAt).toLocaleDateString("pt-BR")
               : "";
 
             return {
               id: item.id,
+              movieId: item.movieId,
               date: watchedDate,
               title: item.title ?? "Filme sem título",
+              watchedAt: exactWatchedAt,
             };
           }),
         );
@@ -68,12 +76,22 @@ export function HistoryPage({ userId, onGoToHome, onGoToPlaylists, onGoToHistory
     };
   }, [userId]);
 
-  function handleHideItem(id: string) {
-    setHistoryList(prev => prev.filter(item => item.id !== id));
+  async function handleHideItem(itemToHide: HistoryItem) {
+    try {
+      await hideHistoryMovie(userId, itemToHide.movieId, itemToHide.watchedAt);
+      setHistoryList((prev) => prev.filter((item) => item.id !== itemToHide.id));
+    } catch (error) {
+      console.warn("Erro ao ocultar item do histórico", error);
+    }
   }
 
-  function handleHideAll() {
-    setHistoryList([]);
+  async function handleHideAll() {
+    try {
+      await hideAllHistory(userId);
+      setHistoryList([]);
+    } catch (error) {
+      console.warn("Erro ao ocultar histórico", error);
+    }
   }
 
   return (
@@ -119,7 +137,7 @@ export function HistoryPage({ userId, onGoToHome, onGoToPlaylists, onGoToHistory
                     type="button" 
                     className="btn-hide-item-dark"
                     title="Esconder do histórico"
-                    onClick={() => handleHideItem(item.id)}
+                    onClick={() => handleHideItem(item)}
                   >
                     {/* Ícone de Proibido/Ocultar */}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -33,3 +33,33 @@ export async function getHistoryByUserId(userId: string): Promise<HistoryApiReco
 
   return data.data ?? [];
 }
+
+export async function hideHistoryMovie(userId: string, movieId: string, watchedAt: string) {
+  const response = await fetch(`${API_URL}/history/hide-movie`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id_user: userId,
+      id_movie: movieId,
+      watched_at: watchedAt,
+    }),
+  });
+
+  return parseResponse<{ message: string }>(response);
+}
+
+export async function hideAllHistory(userId: string) {
+  const response = await fetch(`${API_URL}/history/hide-all`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id_user: userId,
+    }),
+  });
+
+  return parseResponse<{ message: string }>(response);
+}
