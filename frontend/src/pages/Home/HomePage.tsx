@@ -15,9 +15,10 @@ interface HomePageProps {
   onGoToPlaylists: () => void;
   onGoToHome?: () => void;
   onGoToHistory: () => void;
+  onSelectMovie: (movie: Movie) => void;
 }
 
-export function HomePage({ userId, onGoToPlaylists, onGoToHome, onGoToHistory }: HomePageProps) {
+export function HomePage({ userId, onGoToPlaylists, onGoToHome, onGoToHistory, onSelectMovie }: HomePageProps) {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loadingMovies, setLoadingMovies] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -182,26 +183,17 @@ export function HomePage({ userId, onGoToPlaylists, onGoToHome, onGoToHistory }:
             <div className="section-title-line"></div> {/* Linha que vai até o outro lado */}
           </div>
 
-          {loadingMovies && (
-            <p className="catalog-empty-message">Carregando filmes...</p>
-          )}
-
-          {!loadingMovies && movies.length === 0 && !error && (
-            <p className="catalog-empty-message">
-              Nenhum filme encontrado no catálogo.
-            </p>
-          )}
-
-          <div className="movie-grid">
-            {movies.map((movie) => (
-              <MovieCard
-                key={movie.id}
-                movie={movie}
-                onAddToPlaylist={openAddMovieToPlaylistModal}
-              />
-            ))}
-          </div>
-        </section>
+        <div className="movie-grid">
+          {movies.map((movie) => (
+            <MovieCard
+              key={movie.id}
+              movie={movie}
+              onAddToPlaylist={openAddMovieToPlaylistModal}
+              onSelectMovie={onSelectMovie}
+            />
+          ))}
+        </div>
+      </section>
       </main>
 
       {/* MODAL DE PLAYLIST */}
