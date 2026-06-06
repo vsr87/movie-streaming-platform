@@ -2,6 +2,15 @@ import React, { useEffect, useState, useRef } from "react";
 import { getProfile, updateProfile, updatePhoto } from "../../services/accountService";
 import "./AccountPage.css";
 
+const getBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 interface AccountPageProps {
   userId: string;
   onGoToHome: () => void;
@@ -31,7 +40,38 @@ export function AccountPage({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Controlled editing states
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+
+  // Password visibility
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Unsaved changes blocker modal
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+
+  // Photo upload preview states
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [isPhotoRemoved, setIsPhotoRemoved] = useState(false);
+  
+  // User deletion states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  const hasChanges =
+    name !== originalName ||
+    email !== originalEmail ||
+    (password !== "............" && password !== "") ||
+    selectedPhotoFile !== null ||
+    isPhotoRemoved;
 
   const loadProfile = async () => {
     try {
@@ -55,52 +95,182 @@ export function AccountPage({
     loadProfile();
   }, [userId]);
 
+  // Handle auto-clear timers for notifications (10 seconds)
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  const mapErrorMessage = (errorMsg: string): string => {
+    const msg = errorMsg.toLowerCase();
+    if (msg.includes("e-mail já") || msg.includes("email já") || msg.includes("já está em uso") || msg.includes("conflict")) {
+      return "E-mail já está em uso";
+    }
+    if (msg.includes("senha fora") || msg.includes("padrão exigido") || msg.includes("padrao exigido")) {
+      return "Senha fora do padrão exigido";
+    }
+    if (msg.includes("arquivo inválido") || msg.includes("arquivo invalido")) {
+      return "Arquivo inválido";
+    }
+    if (msg.includes("excede o tamanho") || msg.includes("tamanho superior") || msg.includes("tamanho permitido")) {
+      return "Arquivo excede o tamanho permitido";
+    }
+    if (msg.includes("conexão") || msg.includes("conexao") || msg.includes("failed to fetch") || msg.includes("network")) {
+      return "Erro de conexão";
+    }
+    if (msg.includes("sessão expirada") || msg.includes("sessao expirada") || msg.includes("unauthorized") || msg.includes("não autorizado") || msg.includes("401")) {
+      return "Sessão expirada";
+    }
+    if (msg.includes("erro interno") || msg.includes("internal server") || msg.includes("500")) {
+      return "Erro interno";
+    }
+    return errorMsg;
+  };
+
+  // Handle unload warnings when browsing away
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasChanges]);
+
   const handleCancel = () => {
     setName(originalName);
     setEmail(originalEmail);
     setPassword("............");
+    setIsEditingName(false);
+    setIsEditingEmail(false);
+    setIsEditingPassword(false);
+    setSelectedPhotoFile(null);
+    setIsPhotoRemoved(false);
+    if (previewPhotoUrl) {
+      URL.revokeObjectURL(previewPhotoUrl);
+      setPreviewPhotoUrl(null);
+    }
     setSuccessMessage(null);
     setErrorMessage(null);
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
     setIsSaving(true);
     setSuccessMessage(null);
     setErrorMessage(null);
 
     const payload: any = {};
-    let hasChanges = false;
+    let hasFormChanges = false;
 
     if (name !== originalName) {
       payload.name = name;
-      hasChanges = true;
+      hasFormChanges = true;
     }
     if (email !== originalEmail) {
       payload.email = email;
-      hasChanges = true;
+      hasFormChanges = true;
     }
     if (password && password !== "............") {
       payload.password = password;
-      hasChanges = true;
-    }
-
-    if (!hasChanges) {
-      setErrorMessage("Nenhuma alteração foi realizada");
-      setIsSaving(false);
-      return;
+      hasFormChanges = true;
     }
 
     try {
-      const res = await updateProfile(userId, payload);
-      setSuccessMessage(res.message || "Alterações salvas com sucesso");
-      setPassword("............");
+      // 1. Process text changes
+      if (hasFormChanges) {
+        try {
+          await updateProfile(userId, payload);
+          if (payload.name) setOriginalName(payload.name);
+          if (payload.email) setOriginalEmail(payload.email);
+        } catch (formError: any) {
+          const errMsg = mapErrorMessage(formError.message || "Erro ao salvar alterações.");
+          setErrorMessage(errMsg);
+          throw new Error(errMsg);
+        }
+      }
+
+      // 2. Process photo changes or removal
+      if (isPhotoRemoved) {
+        try {
+          await updatePhoto(userId, "", 0);
+          localStorage.removeItem(`profile_avatar_${userId}`);
+          setPhotoUrl(null);
+          setIsPhotoRemoved(false);
+        } catch (photoError: any) {
+          setIsPhotoRemoved(false);
+          const errMsg = mapErrorMessage(photoError.message || "Erro ao salvar alterações.");
+          setErrorMessage(errMsg);
+          throw new Error(errMsg);
+        }
+      } else if (selectedPhotoFile) {
+        try {
+          const sizeMB = selectedPhotoFile.size / (1024 * 1024);
+          await updatePhoto(userId, selectedPhotoFile.name, sizeMB);
+          
+          try {
+            const base64 = await getBase64(selectedPhotoFile);
+            localStorage.setItem(`profile_avatar_${userId}`, base64);
+          } catch (storageErr) {
+            console.error("Erro ao salvar no localStorage", storageErr);
+          }
+          
+          setPhotoUrl(selectedPhotoFile.name);
+          setSelectedPhotoFile(null);
+          if (previewPhotoUrl) {
+            URL.revokeObjectURL(previewPhotoUrl);
+            setPreviewPhotoUrl(null);
+          }
+        } catch (photoError: any) {
+          setSelectedPhotoFile(null);
+          if (previewPhotoUrl) {
+            URL.revokeObjectURL(previewPhotoUrl);
+            setPreviewPhotoUrl(null);
+          }
+          
+          const errMsg = mapErrorMessage(photoError.message || "Erro ao salvar alterações.");
+          setErrorMessage(errMsg);
+          throw new Error(errMsg);
+        }
+      }
+
+      // 3. Success feedback message logic
+      let successMsg = "Alterações salvas com sucesso";
+      if (isPhotoRemoved && !hasFormChanges) {
+        successMsg = "Foto removida com sucesso";
+      } else if (selectedPhotoFile && !hasFormChanges) {
+        successMsg = "Foto atualizada com sucesso";
+      } else if (hasFormChanges && !selectedPhotoFile && !isPhotoRemoved) {
+        if (payload.email && !payload.name && !payload.password) {
+          successMsg = "E-mail atualizado com sucesso";
+        } else if (payload.password && !payload.name && !payload.email) {
+          successMsg = "Senha atualizada com sucesso";
+        }
+      }
       
-      // Update original values
-      if (payload.name) setOriginalName(payload.name);
-      if (payload.email) setOriginalEmail(payload.email);
+      setSuccessMessage(successMsg);
+      setPassword("............");
+      setIsEditingName(false);
+      setIsEditingEmail(false);
+      setIsEditingPassword(false);
     } catch (err: any) {
-      setErrorMessage(err.message || "Erro ao salvar alterações.");
+      // Handled in sub-blocks
     } finally {
       setIsSaving(false);
     }
@@ -110,33 +280,210 @@ export function AccountPage({
     fileInputRef.current?.click();
   };
 
-  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsSaving(true);
+    const sizeMB = file.size / (1024 * 1024);
+    if (sizeMB > 15) {
+      setErrorMessage("Arquivo excede o tamanho permitido");
+      setSelectedPhotoFile(null);
+      if (previewPhotoUrl) {
+        URL.revokeObjectURL(previewPhotoUrl);
+        setPreviewPhotoUrl(null);
+      }
+      return;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
+    if (!allowedTypes.includes(file.type) && !["jpg", "jpeg", "png"].includes(fileExt || "")) {
+      setErrorMessage("Arquivo inválido");
+      setSelectedPhotoFile(null);
+      if (previewPhotoUrl) {
+        URL.revokeObjectURL(previewPhotoUrl);
+        setPreviewPhotoUrl(null);
+      }
+      return;
+    }
+
+    setSelectedPhotoFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setPreviewPhotoUrl(previewUrl);
+    setIsPhotoRemoved(false); // Reset photo removal if they select a new file
     setSuccessMessage(null);
     setErrorMessage(null);
+  };
 
-    try {
-      const sizeMB = file.size / (1024 * 1024);
-      const res = await updatePhoto(userId, file.name, sizeMB);
-      setSuccessMessage(res.message || "Foto atualizada com sucesso");
-      // Update photo local state
-      setPhotoUrl(file.name);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Erro ao atualizar foto.");
-    } finally {
-      setIsSaving(false);
-      // Reset input value to allow selecting same file again
-      if (fileInputRef.current) fileInputRef.current.value = "";
+  const handleRemovePhotoClick = () => {
+    setIsPhotoRemoved(true);
+    setSelectedPhotoFile(null);
+    if (previewPhotoUrl) {
+      URL.revokeObjectURL(previewPhotoUrl);
+      setPreviewPhotoUrl(null);
+    }
+    setSuccessMessage(null);
+    setErrorMessage(null);
+  };
+
+  const generateJWT = async (userId: string): Promise<string> => {
+    const header = { alg: "HS256", typ: "JWT" };
+    const payload = { id: userId, exp: Math.floor(Date.now() / 1000) + 3600 };
+    
+    const stringifyAndBase64Url = (obj: any) => {
+      const str = JSON.stringify(obj);
+      const bytes = new TextEncoder().encode(str);
+      const base64 = btoa(String.fromCharCode(...bytes));
+      return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    };
+
+    const headerB64 = stringifyAndBase64Url(header);
+    const payloadB64 = stringifyAndBase64Url(payload);
+    const tokenInput = `${headerB64}.${payloadB64}`;
+
+    // Sign with HMAC SHA-256 and key 'secret'
+    const keyData = new TextEncoder().encode("secret");
+    const key = await window.crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    const signatureBuffer = await window.crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(tokenInput)
+    );
+
+    const signatureArray = new Uint8Array(signatureBuffer);
+    const signatureB64 = btoa(String.fromCharCode(...signatureArray))
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+
+    return `${tokenInput}.${signatureB64}`;
+  };
+
+  const handleRemoveAccountClick = () => {
+    if (hasChanges) {
+      setShowUnsavedModal(true);
+    } else {
+      setShowDeleteModal(true);
     }
   };
 
-  // Helper avatar fallback
-  const avatarSource = photoUrl 
-    ? (photoUrl.startsWith("http") ? photoUrl : `https://lh3.googleusercontent.com/aida-public/${photoUrl}`) 
-    : "https://lh3.googleusercontent.com/aida-public/AB6AXuADUdUiXftpvF9uuBSbsyTJ89zqe7LR_EXkoqJ9m37bXkr7qGsbImgOAgqLnnpGvwSHnUJAYlPtWGJ-2bItZbs_Ilzt0UWcV-rwS2AYCzlxHIMmtDdKxnyfQH5Jbxzg8CKjxJs3iCYIxtgjhcZJkYYKX3cavVWWcxGfMGGDmOju8BvZ0o41MZWCaWnku0hktfyZFbl9xEVGEBdlNSGWNZmgvXq_fV1T8LWHDnuAP3QW1goj_RZ4c69oLWw-cVf_zYtDyhJ8uDycomSv";
+  const handleConfirmDeleteAccount = async () => {
+    setIsDeleting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+
+    try {
+      const token = await generateJWT(userId);
+      const res = await fetch(`${API_URL}/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        let msg = "Erro interno do servidor. Tente novamente mais tarde.";
+        if (res.status === 401) {
+          msg = "Sessão expirada.\nFaça login novamente.";
+        } else if (res.status === 404) {
+          msg = "Conta não encontrada.";
+        } else if (res.status === 500) {
+          msg = "Erro interno do servidor.\nTente novamente mais tarde.";
+        }
+        throw new Error(msg);
+      }
+
+      setSuccessMessage("Conta removida com sucesso.");
+      localStorage.removeItem(`profile_avatar_${userId}`);
+      setShowDeleteModal(false);
+
+      // Redirect after message display
+      setTimeout(() => {
+        onLogout?.();
+      }, 2000);
+
+    } catch (err: any) {
+      let msg = err.message || "Erro interno do servidor.\nTente novamente mais tarde.";
+      if (err.name === "TypeError" && err.message.includes("fetch")) {
+        msg = "Não foi possível conectar ao servidor.";
+      }
+      setErrorMessage(msg);
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEditNameClick = () => {
+    setIsEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 50);
+  };
+
+  const handleEditEmailClick = () => {
+    setIsEditingEmail(true);
+    setTimeout(() => emailInputRef.current?.focus(), 50);
+  };
+
+  const handleEditPasswordClick = () => {
+    setIsEditingPassword(true);
+    setTimeout(() => passwordInputRef.current?.focus(), 50);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+    }
+  };
+
+  // Intercept navigation
+  const handleMenuNavigation = () => {
+    if (hasChanges) {
+      setShowUnsavedModal(true);
+    } else {
+      onGoToHome();
+    }
+  };
+
+  const handleLogoutNavigation = () => {
+    if (hasChanges) {
+      setShowUnsavedModal(true);
+    } else {
+      onLogout?.();
+    }
+  };
+
+  const handleHelpNavigation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (hasChanges) {
+      setShowUnsavedModal(true);
+    } else {
+      setShowHelpModal(true);
+    }
+  };
+
+  // Helper avatar source (local preview URL first, then base64 if it's a custom file name, then Google avatar ID, fallback to default)
+  const localBase64 = localStorage.getItem(`profile_avatar_${userId}`);
+  const hasPhoto = photoUrl && photoUrl !== "" && photoUrl !== "null" && photoUrl !== "undefined";
+  const isGoogleId = hasPhoto && (photoUrl.length > 50 || photoUrl.startsWith("http"));
+  
+  const avatarSource = isPhotoRemoved
+    ? null
+    : (previewPhotoUrl
+        ? previewPhotoUrl
+        : (isGoogleId
+            ? (photoUrl.startsWith("http") ? photoUrl : `https://lh3.googleusercontent.com/aida-public/${photoUrl}`)
+            : (localBase64 && hasPhoto
+                ? localBase64
+                : null)));
 
   return (
     <div className="font-sans antialiased min-h-screen flex bg-black text-white w-full">
@@ -155,26 +502,29 @@ export function AccountPage({
         data-purpose="main-navigation"
       >
         <div className="mb-12">
-          <h1 className="text-brand-gold text-2xl font-extrabold tracking-tight">Cinema</h1>
+          <h1 className="text-brand-gold text-2xl font-extrabold tracking-tight">CInema</h1>
         </div>
 
         {/* User Mini Profile */}
         <div className="flex items-center gap-3 mb-10 p-2" data-purpose="user-sidebar-profile">
-          <img
-            alt={name || "User"}
-            className="w-10 h-10 rounded-full border border-brand-gold/50 object-cover"
-            src={avatarSource}
-          />
+          {avatarSource ? (
+            <img
+              alt={name || "User"}
+              className="w-10 h-10 rounded-full border border-brand-gold/50 object-cover"
+              src={avatarSource}
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full border border-brand-gold/50 bg-white" />
+          )}
           <div>
             <p className="text-sm font-bold text-white leading-tight">{name || "Carregando..."}</p>
-            <p className="text-[10px] text-brand-gold/70 uppercase tracking-widest">Premium Member</p>
           </div>
         </div>
 
         {/* Navigation Links */}
         <nav className="flex-1 space-y-2">
           <button
-            onClick={onGoToHome}
+            onClick={handleMenuNavigation}
             className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-brand-gold transition-colors duration-200 text-left"
             type="button"
           >
@@ -192,10 +542,8 @@ export function AccountPage({
                 strokeWidth="2"
               ></path>
             </svg>
-            <span className="text-sm font-medium">Dashboard</span>
+            <span className="text-sm font-medium">Menu</span>
           </button>
-
-
 
           <button
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl active-nav-item text-brand-gold text-left"
@@ -215,13 +563,14 @@ export function AccountPage({
                 strokeWidth="2"
               ></path>
             </svg>
-            <span className="text-sm font-bold">Account Settings</span>
+            <span className="text-sm font-bold">Configurações da conta</span>
           </button>
         </nav>
 
         {/* Bottom Actions */}
         <div className="mt-auto pt-6 border-t border-brand-gold/10 space-y-2">
           <a
+            onClick={handleHelpNavigation}
             className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white transition-colors duration-200"
             href="#"
           >
@@ -239,10 +588,33 @@ export function AccountPage({
                 strokeWidth="2"
               ></path>
             </svg>
-            <span className="text-sm">Help Center</span>
+            <span className="text-sm">Central de ajuda</span>
           </a>
+          
           <button
-            onClick={onLogout}
+            onClick={handleRemoveAccountClick}
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 text-left"
+            type="button"
+          >
+            <svg
+              className="w-5 h-5 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            <span className="text-sm">Remover conta</span>
+          </button>
+          
+          <button
+            onClick={handleLogoutNavigation}
             className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-400 transition-colors duration-200 text-left"
             type="button"
           >
@@ -260,7 +632,7 @@ export function AccountPage({
                 strokeWidth="2"
               ></path>
             </svg>
-            <span className="text-sm">Sign Out</span>
+            <span className="text-sm">Sair da conta</span>
           </button>
         </div>
       </aside>
@@ -270,8 +642,8 @@ export function AccountPage({
       <main className="flex-1 ml-72 p-12 bg-black min-h-screen" data-purpose="account-settings-content">
         {/* Page Header */}
         <header className="mb-12">
-          <h2 className="text-4xl font-extrabold text-brand-gold mb-2">Configurações da Conta</h2>
-          <p className="text-gray-400 text-lg">Gerencie suas informações pessoais e preferências de visualização.</p>
+          <h2 className="text-4xl font-extrabold text-brand-gold mb-2">Configurações da conta</h2>
+          <p className="text-gray-400 text-lg">Gerencie suas informações pessoais</p>
         </header>
 
         {isLoading ? (
@@ -286,47 +658,80 @@ export function AccountPage({
           >
             {/* Feedback Alerts */}
             {successMessage && (
-              <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-sm font-semibold flex items-center gap-2">
-                <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>{successMessage}</span>
+              <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-sm font-semibold flex items-center justify-between gap-2 transition-all">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{successMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSuccessMessage(null)}
+                  className="text-emerald-400 hover:text-emerald-300 focus:outline-none text-lg font-bold px-2"
+                  title="Fechar"
+                >
+                  &times;
+                </button>
               </div>
             )}
             {errorMessage && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm font-semibold flex items-center gap-2">
-                <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span>{errorMessage}</span>
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm font-semibold flex items-center justify-between gap-2 transition-all">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>{errorMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMessage(null)}
+                  className="text-red-400 hover:text-red-300 focus:outline-none text-lg font-bold px-2"
+                  title="Fechar"
+                >
+                  &times;
+                </button>
               </div>
             )}
 
             {/* Profile Header Info */}
             <div className="flex items-center gap-8 mb-12">
               <div className="relative">
-                <img
-                  alt={name || "User"}
-                  className="w-32 h-32 rounded-full border-4 border-brand-gold/20 object-cover shadow-2xl"
-                  src={avatarSource}
-                />
+                {avatarSource ? (
+                  <img
+                    alt={name || "User"}
+                    className="w-32 h-32 rounded-full border-4 border-brand-gold/20 object-cover shadow-2xl"
+                    src={avatarSource}
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full border-4 border-brand-gold/20 bg-white shadow-2xl" />
+                )}
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white mb-1">{name}</h3>
-                <p className="text-gray-400 text-sm mb-4">Membro desde Outubro 2023</p>
-                <button
-                  type="button"
-                  onClick={handlePhotoUploadClick}
-                  disabled={isSaving}
-                  className="bg-brand-gold text-brand-dark px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50"
-                >
-                  {isSaving ? "Uploading..." : "Upload New Photo"}
-                </button>
+                <h3 className="text-2xl font-bold text-white mb-4">{name}</h3>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={handlePhotoUploadClick}
+                    disabled={isSaving}
+                    className="bg-brand-gold text-brand-dark px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50"
+                  >
+                    Upload foto nova
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemovePhotoClick}
+                    disabled={isSaving || isPhotoRemoved || (!previewPhotoUrl && !photoUrl)}
+                    className="border border-red-500 text-red-500 px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                  >
+                    Remover foto
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Settings Form */}
-            <form className="space-y-8" onSubmit={handleSubmit}>
+            {/* Settings Form (Form submission disabled, only explicit Save button submit) */}
+            <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Username Field */}
                 <div>
@@ -335,17 +740,27 @@ export function AccountPage({
                   </label>
                   <div className="relative">
                     <input
-                      className="w-full bg-black/40 border border-brand-gold/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-brand-gold transition-all input-glow"
+                      ref={nameInputRef}
+                      className={`w-full bg-black/40 border rounded-xl px-4 py-4 pr-12 text-white focus:outline-none transition-all ${
+                        isEditingName ? "input-editable input-glow" : "input-locked"
+                      }`}
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      readOnly={!isEditingName}
                       required
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-gold">
+                    <button
+                      type="button"
+                      onClick={handleEditNameClick}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 input-action-btn"
+                      title="Editar nome"
+                    >
                       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
                       </svg>
-                    </div>
+                    </button>
                   </div>
                 </div>
 
@@ -356,18 +771,27 @@ export function AccountPage({
                   </label>
                   <div className="relative">
                     <input
-                      className="w-full bg-black/40 border border-brand-gold/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-brand-gold transition-all input-glow"
+                      ref={emailInputRef}
+                      className={`w-full bg-black/40 border rounded-xl px-4 py-4 pr-12 text-white focus:outline-none transition-all ${
+                        isEditingEmail ? "input-editable input-glow" : "input-locked"
+                      }`}
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      readOnly={!isEditingEmail}
                       required
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-gold">
+                    <button
+                      type="button"
+                      onClick={handleEditEmailClick}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 input-action-btn"
+                      title="Editar e-mail"
+                    >
                       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
-                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
                       </svg>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -379,10 +803,15 @@ export function AccountPage({
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full bg-black/40 border border-brand-gold/30 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-brand-gold transition-all input-glow"
-                    type="password"
+                    ref={passwordInputRef}
+                    className={`w-full bg-black/40 border rounded-xl px-4 py-4 pr-20 text-white focus:outline-none transition-all ${
+                      isEditingPassword ? "input-editable input-glow" : "input-locked"
+                    }`}
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    readOnly={!isEditingPassword}
                     onFocus={() => {
                       if (password === "............") {
                         setPassword("");
@@ -394,73 +823,40 @@ export function AccountPage({
                       }
                     }}
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-gold/50">
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        clipRule="evenodd"
-                        d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
-                        fillRule="evenodd"
-                      ></path>
-                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"></path>
-                    </svg>
+                  {/* Eye Toggle & Edit Pencil buttons side by side */}
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="input-action-btn"
+                      title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    >
+                      {showPassword ? (
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      ) : (
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleEditPasswordClick}
+                      className="input-action-btn"
+                      title="Editar senha"
+                    >
+                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                      </svg>
+                    </button>
                   </div>
                 </div>
                 <p className="mt-2 text-[11px] text-gray-500">
-                  A senha deve conter pelo menos 8 caracteres, incluindo e símbolos.
+                  A senha deve conter pelo menos 8 caracteres, incluindo pelo menos uma letra minúscula, uma maiúscula, um número e um dos símbolos @, $, !, %, *, ? ou &.
                 </p>
-              </div>
-
-              {/* Language and Quality Selectors */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button
-                  className="w-full bg-brand-gold flex items-center justify-between px-6 py-4 rounded-xl text-brand-dark font-bold text-sm"
-                  type="button"
-                >
-                  <div className="flex items-center gap-3">
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      ></path>
-                    </svg>
-                    <span>Idioma: Português</span>
-                  </div>
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                  </svg>
-                </button>
-                <button
-                  className="w-full bg-brand-gold flex items-center justify-between px-6 py-4 rounded-xl text-brand-dark font-bold text-sm"
-                  type="button"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="bg-brand-dark text-brand-gold text-[10px] px-1.5 py-0.5 rounded font-black">HD</span>
-                    <span>Qualidade: 4K Ultra HD</span>
-                  </div>
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                  </svg>
-                </button>
               </div>
 
               <hr className="border-brand-gold/10 my-8" />
@@ -476,7 +872,8 @@ export function AccountPage({
                 </button>
                 <button
                   className="px-8 py-3 bg-brand-gold border border-brand-gold rounded-xl text-brand-dark font-bold text-sm hover:bg-yellow-500 transition-colors shadow-lg shadow-brand-gold/20 disabled:opacity-50"
-                  type="submit"
+                  type="button"
+                  onClick={handleSubmit}
                   disabled={isSaving}
                 >
                   {isSaving ? "Salvando..." : "Salvar Alterações"}
@@ -512,7 +909,7 @@ export function AccountPage({
             </div>
           </div>
 
-          {/* Recent Access Card */}
+          {/* Dados Protegidos Card */}
           <div className="bg-brand-gold p-6 rounded-[24px] flex items-center gap-5">
             <div className="bg-black p-3 rounded-xl">
               <svg
@@ -523,7 +920,7 @@ export function AccountPage({
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
@@ -531,13 +928,153 @@ export function AccountPage({
               </svg>
             </div>
             <div>
-              <h4 className="text-brand-dark font-extrabold text-lg leading-tight">Acessos Recentes</h4>
-              <p className="text-brand-dark/70 text-sm font-medium">Você tem 3 dispositivos conectados à sua conta no momento.</p>
+              <h4 className="text-brand-dark font-extrabold text-lg leading-tight">Dados Protegidos</h4>
+              <p className="text-brand-dark/70 text-sm font-medium">Seus dados são armazenados de forma segura e utilizados apenas para funcionalidades da plataforma.</p>
             </div>
           </div>
         </div>
       </main>
       {/* END: MainContent */}
+
+      {/* Unsaved Changes Modal */}
+      {showUnsavedModal && (
+        <div className="catalog-modal-backdrop z-[999]">
+          <div className="catalog-modal bg-brand-dark border border-brand-gold/20 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+            <h3 className="text-xl font-bold text-brand-gold mb-4">Alterações não salvas</h3>
+            <p className="text-gray-300 mb-8">Alterações não salvas. Salve ou cancele as alterações antes de continuar.</p>
+            <button
+              type="button"
+              onClick={() => setShowUnsavedModal(false)}
+              className="w-full bg-brand-gold text-brand-dark py-3 rounded-xl font-bold text-sm hover:bg-yellow-500 transition-colors shadow-lg shadow-brand-gold/20"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="catalog-modal-backdrop z-[999]">
+          <div className="catalog-modal bg-brand-dark border border-red-500/20 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+            <h3 className="text-xl font-bold text-red-500 mb-4">Remover conta</h3>
+            <p className="text-gray-300 mb-2 font-semibold">Esta ação é permanente e não poderá ser desfeita.</p>
+            <p className="text-gray-400 mb-8 text-sm">Tem certeza de que deseja remover sua conta?</p>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="w-1/2 border border-gray-500 text-gray-300 py-3 rounded-xl font-bold text-sm hover:bg-white/5 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteAccount}
+                disabled={isDeleting}
+                className="w-1/2 bg-red-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Removendo...</span>
+                  </>
+                ) : (
+                  <span>Remover conta</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help Modal */}
+      {showHelpModal && (
+        <div className="catalog-modal-backdrop z-[999] flex items-center justify-center bg-black/80">
+          <div className="catalog-modal bg-brand-dark border border-brand-gold/20 rounded-3xl p-8 max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl relative text-left">
+            {/* Close button X in corner */}
+            <button
+              type="button"
+              onClick={() => setShowHelpModal(false)}
+              className="absolute top-6 right-6 text-gray-400 hover:text-brand-gold transition-colors text-xl font-semibold"
+              title="Fechar"
+            >
+              &times;
+            </button>
+
+            <h2 className="text-2xl font-extrabold text-brand-gold mb-6 border-b border-brand-gold/10 pb-4">
+              Central de Ajuda
+            </h2>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto pr-2 space-y-6 text-gray-300 text-sm">
+              <section>
+                <h3 className="text-lg font-bold text-white mb-2">Bem-vindo ao Vintage Cinema</h3>
+                <p className="leading-relaxed">
+                  Esta é a Central de Ajuda do Vintage Cinema. Aqui você encontra as principais informações para navegar pela nossa plataforma de streaming de clássicos do cinema, gerenciar seus dados de perfil e solucionar eventuais dúvidas e problemas.
+                </p>
+              </section>
+
+              <section>
+                <h4 className="text-md font-bold text-brand-gold mb-2">Minha Conta</h4>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Como atualizar nome:</strong> Clique no ícone de lápis ao lado do campo "Nome de Usuário", digite o novo nome e clique em "Salvar Alterações".</li>
+                  <li><strong>Como alterar e-mail:</strong> Clique no ícone de lápis ao lado do campo "E-mail", digite o novo endereço de e-mail e clique em "Salvar Alterações".</li>
+                  <li><strong>Como trocar senha:</strong> Clique no ícone de lápis ao lado do campo "Nova Senha", digite a nova senha desejada e clique em "Salvar Alterações".</li>
+                  <li><strong>Como atualizar foto de perfil:</strong> Clique no botão "Upload foto nova", selecione um arquivo válido (PNG, JPG, JPEG até 15MB) para ver o preview e clique em "Salvar Alterações".</li>
+                </ul>
+              </section>
+
+              <section>
+                <h4 className="text-md font-bold text-brand-gold mb-2">Segurança</h4>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Requisitos mínimos de senha:</strong> Pelo menos 8 caracteres, contendo pelo menos uma letra maiúscula, uma minúscula, um número e um símbolo (@, $, !, %, *, ? ou &).</li>
+                  <li><strong>Proteção de conta:</strong> Para sua segurança, a autenticação de dois fatores está ativa por padrão.</li>
+                  <li><strong>Sessão expirada:</strong> Por motivos de segurança, se você ficar inativo por muito tempo ou o token expirar, a sessão será encerrada e você precisará fazer login novamente.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h4 className="text-md font-bold text-brand-gold mb-2">Navegação</h4>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Como acessar filmes:</strong> Na página principal, clique em qualquer título do catálogo para ver detalhes e assistir.</li>
+                  <li><strong>Como acessar séries:</strong> Use as categorias e coleções organizadas na página principal.</li>
+                  <li><strong>Como utilizar o menu principal:</strong> Utilize a barra de navegação no topo ou o link "Menu" na barra lateral para voltar rapidamente à página inicial.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h4 className="text-md font-bold text-brand-gold mb-2">Problemas comuns</h4>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>E-mail já cadastrado:</strong> Se o sistema informar que o e-mail está em uso, certifique-se de que não possui outra conta cadastrada ou utilize um e-mail diferente.</li>
+                  <li><strong>Arquivo de foto inválido:</strong> Verifique se a foto está no formato correto (JPG/PNG) e se o tamanho do arquivo é menor que 15MB.</li>
+                  <li><strong>Falha de conexão:</strong> Verifique seu acesso à internet. Se o problema persistir, aguarde alguns minutos e tente novamente.</li>
+                  <li><strong>Como recuperar alterações:</strong> Se você fizer edições incorretas e ainda não tiver clicado em "Salvar Alterações", basta clicar no botão "Cancelar" para restaurar os dados originais.</li>
+                </ul>
+              </section>
+
+              <section className="border-t border-brand-gold/10 pt-4">
+                <h4 className="text-md font-bold text-brand-gold mb-2">Suporte</h4>
+                <p className="leading-relaxed">
+                  Caso seu problema não esteja listado ou necessite de suporte técnico direto, entre em contato com a nossa equipe de suporte pelo e-mail: <span className="text-brand-gold">suporte@vintagecinema.com</span>. Nosso tempo médio de resposta é de até 24 horas úteis.
+                </p>
+              </section>
+            </div>
+
+            {/* Footer with Close Button */}
+            <div className="mt-6 border-t border-brand-gold/10 pt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowHelpModal(false)}
+                className="px-6 py-2.5 bg-brand-gold text-brand-dark rounded-xl font-bold text-sm hover:bg-yellow-500 transition-colors shadow-lg shadow-brand-gold/20"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
