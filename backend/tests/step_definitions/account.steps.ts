@@ -22,7 +22,8 @@ const resetDatabase = async () => {
   });
 };
 
-Given('o usuário {string} está logado com o e-mail {string}', (name: string, email: string) => {
+Given('o usuário {string} está logado com o e-mail {string}', async (name: string, email: string) => {
+  await resetDatabase();
   currentUserId = '1';
 });
 
@@ -67,11 +68,11 @@ When('altera o seu e-mail para {string}', async (newEmail: string) => {
 When('salva as alterações', () => {
 });
 
-Then('o sistema exibe a mensagem {string}', (message: string) => {
+Then('exibe a mensagem {string}', (message: string) => {
   assert.strictEqual(response.data.message, message);
 });
 
-Then('exibe a mensagem {string}', (message: string) => {
+Then('o sistema exibe a mensagem {string}', (message: string) => {
   assert.strictEqual(response.data.message, message);
 });
 
