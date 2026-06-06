@@ -2,7 +2,7 @@ import "dotenv/config";
 import { Given, When, Then } from '@cucumber/cucumber';
 import assert from 'assert';
 import axios from 'axios';
-import prisma from '../../src/database/prisma';
+import { prisma } from '../../src/database/prisma';
 
 const api = axios.create({
     baseURL: 'http://localhost:3000',
