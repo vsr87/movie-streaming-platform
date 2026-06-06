@@ -23,9 +23,9 @@ export function MovieCard({ movie, onAddToPlaylist }: MovieCardProps) {
           <strong>Duração:</strong> {movie.duration} min
         </p>
 
-        {movie.genres && movie.genres.length > 0 && (
+        {movie.genres && (
           <p>
-            <strong>Gêneros:</strong> {movie.genres.join(", ")}
+            <strong>Gêneros:</strong> {typeof movie.genres === "string" ? movie.genres : movie.genres.join(", ")}
           </p>
         )}
 
