@@ -22,8 +22,6 @@ interface AccountPageProps {
 export function AccountPage({
   userId,
   onGoToHome,
-  onGoToPlaylists,
-  onGoToHistory,
   onLogout,
 }: AccountPageProps) {
   const [name, setName] = useState("");
