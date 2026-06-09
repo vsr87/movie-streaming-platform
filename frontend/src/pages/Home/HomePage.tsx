@@ -348,10 +348,6 @@ export function HomePage({ userId, isAdmin, onGoToPlaylists, onGoToHome, onGoToH
 
         {/* SEÇÃO ORIGINAL DO GRID DE FILMES */}
         <section className="catalog-section">
-          <div className="section-title-wrapper">
-            <h2>Todos os Filmes</h2>
-            <div className="section-title-line"></div> {/* Linha que vai até o outro lado */}
-          </div>
 
           {loadingMovies && (
             <p className="catalog-empty-message">Carregando filmes...</p>
