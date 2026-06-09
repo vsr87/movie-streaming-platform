@@ -27,7 +27,7 @@
     "test:player": "NODE_OPTIONS='--import tsx' cucumber-js --config='' ../features/MoviePlayer_Service.feature --import 'tests/step_definitions/player-steps.ts'",
     "test:moviesmanagementservice": "NODE_OPTIONS='--import tsx' cucumber-js --config='' ../features/moviesmanagement_Service.feature --import 'tests/step_definitions/moviesmanagement-service.steps.ts'",
     "test:integ:metadata-url-bd": "npx vitest tests/integration/movie-db.integration.spec.ts",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed-complete.ts"
   },
   "keywords": [],
   "author": "",
